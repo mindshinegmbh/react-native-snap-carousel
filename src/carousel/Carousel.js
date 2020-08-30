@@ -67,7 +67,9 @@ export default class Carousel extends Component {
         useScrollView: PropTypes.oneOfType([PropTypes.bool, PropTypes.func]),
         vertical: PropTypes.bool,
         onBeforeSnapToItem: PropTypes.func,
-        onSnapToItem: PropTypes.func
+        onSnapToItem: PropTypes.func,
+        lockRightSwipe: PropTypes.bool,
+        lockLeftSwipe: PropTypes.bool
     };
 
     static defaultProps = {
@@ -99,7 +101,9 @@ export default class Carousel extends Component {
         shouldOptimizeUpdates: true,
         swipeThreshold: 20,
         useScrollView: !AnimatedFlatList,
-        vertical: false
+        vertical: false,
+        lockRightSwipe: false,
+        lockLeftSwipe: false
     }
 
     constructor (props) {
@@ -968,7 +972,7 @@ export default class Carousel extends Component {
     }
 
     _snapScroll (delta) {
-        const { swipeThreshold } = this.props;
+        const { swipeThreshold, lockLeftSwipe, lockRightSwipe } = this.props;
 
         // When using momentum and releasing the touch with
         // no velocity, scrollEndActive will be undefined (iOS)
@@ -976,27 +980,22 @@ export default class Carousel extends Component {
             this._scrollEndActive = this._scrollStartActive;
         }
 
-        if (this._scrollStartActive !== this._scrollEndActive) {
-            // Snap to the new active item
-            this._snapToItem(this._scrollEndActive);
-        } else {
-            // Snap depending on delta
-            if (delta > 0) {
-                if (delta > swipeThreshold) {
-                    this._snapToItem(this._scrollStartActive + 1);
-                } else {
-                    this._snapToItem(this._scrollEndActive);
-                }
-            } else if (delta < 0) {
-                if (delta < -swipeThreshold) {
-                    this._snapToItem(this._scrollStartActive - 1);
-                } else {
-                    this._snapToItem(this._scrollEndActive);
-                }
+        // Snap depending on delta
+        if (delta > 0) {
+            if (delta > swipeThreshold && !lockLeftSwipe) {
+                this._snapToItem(this._scrollStartActive + 1);
             } else {
-                // Snap to current
-                this._snapToItem(this._scrollEndActive);
+                this._snapToItem(this._scrollStartActive);
             }
+        } else if (delta < 0) {
+            if (delta < -swipeThreshold && !lockRightSwipe) {
+                this._snapToItem(this._scrollStartActive - 1);
+            } else {
+                this._snapToItem(this._scrollStartActive);
+            }
+        } else {
+            // Snap to current
+            this._snapToItem(this._scrollStartActive);
         }
     }
 
