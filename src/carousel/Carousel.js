@@ -131,6 +131,7 @@ export default class Carousel extends Component {
         this._onScrollTriggered = true; // used when momentum is enabled to prevent an issue with edges items
         this._lastScrollDate = 0; // used to work around a FlatList bug
         this._scrollEnabled = props.scrollEnabled !== false;
+        this._scrollStarted = false // used to fix the issue when scroll mistakenly happens by just touching the slide
 
         this._initPositionsAndInterpolators = this._initPositionsAndInterpolators.bind(this);
         this._renderItem = this._renderItem.bind(this);
@@ -875,6 +876,8 @@ export default class Carousel extends Component {
             return;
         }
 
+        this._scrollStarted = true
+
         this._scrollStartOffset = this._getScrollOffset(event);
         this._scrollStartActive = this._getActiveItem(this._scrollStartOffset);
         this._ignoreNextMomentum = false;
@@ -913,6 +916,16 @@ export default class Carousel extends Component {
 
     _onScrollEnd (event) {
         const { autoplayDelay, enableSnap } = this.props;
+
+        if (!this._scrollStarted) {
+            // When user scrolls to the second slide programmatically (via snapToNext) and then touches the slide,
+            // the carousel slides back to the first slide. This happens during a simple touch because
+            // _onScrollBeginDrag is not being called and as a consequence _scrollStartOffset is not initialized.
+            // Here we ensure that _onScrollBeginDrag was called. If not, we don't need to do anything.
+            return;
+        }
+
+        this._scrollStarted = false
 
         if (this._ignoreNextMomentum) {
             // iOS fix
